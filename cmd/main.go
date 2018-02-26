@@ -4,7 +4,8 @@ import "fmt"
 import "github.com/danielsuo/gossip"
 
 func main() {
-  net := gossip.NewNetwork(6)
+  net := gossip.NewNetwork(20)
 
-  fmt.Println(net)
+  fmt.Println("Starting")
+  net.Gossip(1)
 }
