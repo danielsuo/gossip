@@ -4,6 +4,7 @@ import "fmt"
 import "github.com/danielsuo/gossip"
 
 func main() {
-  n := gossip.Node{1}
-  fmt.Printf("Hello, %d!\n", n.Id)
+  net := gossip.NewNetwork(6)
+
+  fmt.Println(net)
 }
