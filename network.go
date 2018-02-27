@@ -1,16 +1,17 @@
 package gossip
 
 import "fmt"
+import "sync"
 import "bytes"
 import "math/rand"
 
 type Network struct {
-	nodes []*Node
+	nodes []Gossiper
 }
 
 func NewNetwork(numNodes int) *Network {
 	// TODO: Network should be able to change size
-	n := Network{nodes: make([]*Node, numNodes, numNodes)}
+	n := Network{nodes: make([]Gossiper, numNodes, numNodes)}
 	for i := 0; i < numNodes; i++ {
 		n.nodes[i] = NewNode()
 	}
@@ -33,13 +34,29 @@ func (network *Network) Add(node *Node) {
 	network.nodes = append(network.nodes, node)
 }
 
+func (network *Network) Start() {
+  wg := new(sync.WaitGroup)
+	for _, node := range network.nodes {
+    wg.Add(1)
+    go func(node Gossiper) {
+      defer wg.Done()
+      node.Start()
+    }(node)
+  }
+  go network.nodes[0].Push(1)
+  for _, node := range network.nodes {
+    node.Stop()
+  }
+
+  wg.Wait()
+}
+
 func (network *Network) Gossip(value int) {
 	patientZero := rand.Intn(len(network.nodes))
 	fmt.Printf("Patient Zero is %d\n", patientZero)
 
 	network.nodes[patientZero].SetState(Infected)
 
-	fanout := 1
 	rounds := 0
 
 	for {
@@ -52,12 +69,12 @@ func (network *Network) Gossip(value int) {
 
 		for i := 0; i < len(network.nodes); i++ {
 			if network.nodes[i].Infected() {
-        fmt.Printf("Round %d, infected %d\n", rounds, i)
-				for j := 0; j < fanout; j++ {
-					// TODO: This should be list of peers
-					target := rand.Intn(len(network.nodes))
-					if network.nodes[target].Susceptible() {
-						network.nodes[target].SetState(Infected)
+				// TODO: Infected should not propagate within a single round
+				fmt.Printf("Round %d, infected %d\n", rounds, i)
+				peers := network.nodes[i].SelectPeers()
+				for _, peer := range peers {
+					if peer.Susceptible() {
+						peer.SetState(Infected)
 					}
 				}
 			}
