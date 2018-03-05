@@ -1,12 +1,14 @@
 package gossip
 
 import "fmt"
+import "time"
 import "sync"
 import "bytes"
 import "math/rand"
 
 type Network struct {
 	nodes []Gossiper
+  
 }
 
 func NewNetwork(numNodes int) *Network {
@@ -44,6 +46,7 @@ func (network *Network) Start() {
     }(node)
   }
   go network.nodes[0].Push(1)
+  time.Sleep(100 * time.Millisecond)
   for _, node := range network.nodes {
     node.Stop()
   }

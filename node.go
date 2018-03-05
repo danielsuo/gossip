@@ -13,6 +13,8 @@ type Gossiper interface {
 	Start()
   Stop()
 	Push(data Data)
+  Gossip(data Data) bool
+
 	Id() int
 
 	SelectPeers() []Gossiper
@@ -46,10 +48,9 @@ func (node *Node) Start() {
   fmt.Printf("Starting node %d\n", node.id)
   for {
     a := <-node.inbox
-    if a == -1 {
+    if !node.Gossip(a) {
       break
     }
-    fmt.Printf("Received %d\n", a)
   }
 }
 
@@ -59,6 +60,23 @@ func (node *Node) Stop() {
 
 func (node *Node) Push(data Data) {
 	node.inbox <- data
+}
+
+func (node *Node) Gossip(data Data) bool {
+  if data == -1 {
+    return false
+  }
+  fmt.Printf("Received %d at %d\n", data, node.id)
+
+  node.SetState(Infected)
+  peers := node.SelectPeers()
+
+  for _, peer := range peers {
+    if peer.Susceptible() {
+      peer.Push(data)
+    }
+  }
+  return true
 }
 
 // TODO: This should really be same type, not Gossiper
